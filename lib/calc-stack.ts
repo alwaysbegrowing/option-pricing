@@ -33,6 +33,8 @@ export class CalcStack extends Stack {
 
 
     this.restApi = new RestApi(this, this.stackName + "RestApi", {
+      cloudWatchRole: true,
+
       deployOptions: {
         stageName: "beta",
         metricsEnabled: true,
