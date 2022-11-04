@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import 'source-map-support/register';
-import * as cdk from 'aws-cdk-lib';
-import { CalcStack } from '../lib/calc-stack';
-export const lambdaFunctionName = "PriceCalulator"
+import "source-map-support/register";
+import * as cdk from "aws-cdk-lib";
+import { CalcStack } from "../lib/calc-stack";
+export const lambdaFunctionName = "calculator";
 
 const app = new cdk.App();
-new CalcStack(app, 'CalcStack', {
+new CalcStack(app, "CalcStack", {
   functionName: lambdaFunctionName,
 
   /* If you don't specify 'env', this stack will be environment-agnostic.

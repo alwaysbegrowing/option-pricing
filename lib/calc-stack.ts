@@ -1,58 +1,56 @@
-// import * as cdk from 'aws-cdk-lib';
-// import { Construct } from 'constructs';
-// // import * as sqs from 'aws-cdk-lib/aws-sqs';
-
-// export class CalcStack extends cdk.Stack {
-//   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-//     super(scope, id, props);
-
-//     // The code that defines your stack goes here
-
-//     // example resource
-//     // const queue = new sqs.Queue(this, 'CalcQueue', {
-//     //   visibilityTimeout: cdk.Duration.seconds(300)
-//     // });
-//   }
-// }
-
-import { LambdaIntegration, MethodLoggingLevel, RestApi } from "aws-cdk-lib/aws-apigateway"
-import { Function, Runtime, AssetCode, } from "aws-cdk-lib/aws-lambda"
-import { Duration, Stack, StackProps } from "aws-cdk-lib"
-import { Construct } from "constructs"
+import { LambdaIntegration, RestApi, Cors } from "aws-cdk-lib/aws-apigateway";
+import { Function, Runtime, AssetCode } from "aws-cdk-lib/aws-lambda";
+import { PythonFunction } from "@aws-cdk/aws-lambda-python-alpha";
+import { Duration, Stack, StackProps } from "aws-cdk-lib";
+import { Construct } from "constructs";
+import { ApiGateway } from "aws-cdk-lib/aws-events-targets";
 
 interface LambdaApiStackProps extends StackProps {
-  functionName: string
+  functionName: string;
 }
 
 export class CalcStack extends Stack {
-  private restApi: RestApi
-  private lambdaFunction: Function
+  private restApi: RestApi;
+  private lambdaFunction: Function;
 
   constructor(scope: Construct, id: string, props: LambdaApiStackProps) {
-    super(scope, id, props)
-
+    super(scope, id, props);
 
     this.restApi = new RestApi(this, this.stackName + "RestApi", {
       cloudWatchRole: true,
 
-      deployOptions: {
-        stageName: "beta",
-        metricsEnabled: true,
-        loggingLevel: MethodLoggingLevel.INFO,
-        dataTraceEnabled: true,
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        allowMethods: Cors.ALL_METHODS, // this is also the default
       },
-    })
 
+      // deployOptions: {
+      //   stageName: "beta",
+      //   metricsEnabled: true,
+      //   loggingLevel: MethodLoggingLevel.INFO,
+      //   dataTraceEnabled: true,
+      // },
+    });
 
-    this.lambdaFunction = new Function(this, props.functionName, {
+    const calculatorBonds = new PythonFunction(this, "calculator", {
       functionName: props.functionName,
-      handler: "handler.handler",
-      runtime: Runtime.NODEJS_16_X,
-      code: new AssetCode(`./src`),
+      handler: "handler",
+      index: "handler.py",
+      runtime: Runtime.PYTHON_3_9,
+      entry: "./src",
       memorySize: 512,
       timeout: Duration.seconds(10),
-    })
+    });
 
-    this.restApi.root.addMethod("GET", new LambdaIntegration(this.lambdaFunction, {}))
+    this.restApi.root.addMethod(
+      "GET",
+      new LambdaIntegration(calculatorBonds, {
+        // requestParameters: {
+        //   "integration.request.path.v": "method.request.path.v",
+        //   "integration.request.path.t": "method.request.path.t",
+        //   "integration.request.path.fs": "method.request.path.fs",
+        // },
+      })
+    );
   }
 }
